@@ -10,8 +10,6 @@
 //! The I2C slave address of the Hifiberry
 #define HIFIBERRY_SLAVE_ADDR         (0x9A >> 1)
 
-/*! \brief Initializes the hifiberry driver (but does not start
- *         anything yet). */
 void hbd_init(void) {
     i2s_init();
     i2c1_init();
@@ -66,21 +64,16 @@ uint8_t r_data[20] = {0};
  * \todo Replace by something appropriate. */
 uint8_t w_data[20];
 
-/*! \brief Reads the value of a single register of the PCM5122.
- *  \param[in] reg The register that is set.
- *  \todo Useless because it doesn't return the read value yet. Make it return
- *  values. */
 void hbd_read_register(hbd_register_t reg) {
     unsigned dlen = 1;
-    
-    i2c1_write(&reg, 1);
+    uint8_t d;
+
+    d = (uint8_t) reg;
+    i2c1_write(&d, 1);
     i2c1_read(dlen);
     while (!i2c1_ready()) i2c1_handler();
 }
 
-/*! \brief Sets the value of a register of the PCM5122.
- *  \param[in] reg The register that is set.
- *  \param[in] value The value that is written to the register. */
 void hbd_write_register(hbd_register_t reg, uint8_t value) {
     w_data[0] = reg;
     w_data[1] = value;
@@ -88,7 +81,6 @@ void hbd_write_register(hbd_register_t reg, uint8_t value) {
     while (!i2c1_ready()) i2c1_handler();
 }
 
-/*! \brief Some function that generates a hearable sine on the output. */
 void hbd_run(void) {
     unsigned int i = 0;
     
