@@ -2,7 +2,8 @@ PATH := /opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-elf/bin:$(PATH)
 
 ARMGNU ?= aarch64-elf
 
-BUILDDIR = ./build
+BUILDDIR = build
+EXPORTDIR = export
 
 LIB_FILES := $(shell find src/driver -name '*.c')
 LIB_SOURCES := $(LIB_FILES:.c=.o)
@@ -22,7 +23,7 @@ C_FLAGS = -Wall -O2 -nostdlib -nostartfiles -fno-exceptions -ffreestanding -Isrc
 CXX_FLAGS = $(C_FLAGS) -fno-rtti -std=c++11
 
 
-all: $(BUILDDIR)/test_bl.srec
+all: $(BUILDDIR)/test_bl.srec export
 
 $(BUILDDIR)/boot.o: boot.s
 	@echo "[ASM] $<"
@@ -42,6 +43,13 @@ $(BUILDDIR)/%.o: %.cpp
 $(BUILDDIR)/libhifiberry.a: $(LIB_OBJS)
 	@echo "[LIB] $<"
 	@$(ARMGNU)-ar rcs $@ $(LIB_OBJS)
+
+export: $(BUILDDIR)/libhifiberry.a
+	@mkdir -p $(EXPORTDIR)
+	@echo "[EXPORT] $(EXPORTDIR)/libhifiberry.a"
+	@cp $< $@
+	@echo "[EXPORT] $(EXPORTDIR)/hifiberry.h"
+	@cp src/driver/hifiberrydacplus.h $(EXPORTDIR)/hifiberry.h
 	
 $(BUILDDIR)/test_bl.srec: $(BUILDDIR)/libhifiberry.a $(TEST_OBJS)
 	@echo "[SREC] $<"
@@ -55,7 +63,7 @@ $(BUILDDIR)/test_bl.srec: $(BUILDDIR)/libhifiberry.a $(TEST_OBJS)
 #				Generate documentation
 #####################################################
 
-DOXYGENDIR = ./doxy
+DOXYGENDIR = doxy
 
 # Generate documentation using doxygen
 doxygen:
@@ -66,10 +74,13 @@ doxygen:
 # 					Cleaning up
 #####################################################
 
-clean: clean_build clean_doxygen
+clean: clean_build clean_doxygen clean_export
 
 clean_build:
 	rm -rf $(BUILDDIR)
 
 clean_doxygen:
 	rm -rf $(DOXYGENDIR)
+
+clean_export:
+	rm -rf $(EXPORTDIR)
