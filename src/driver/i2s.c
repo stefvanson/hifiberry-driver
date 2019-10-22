@@ -133,7 +133,7 @@ void i2s_init(void) {
     // Enable the peripheral
     *PCM_CS_A   |= PCM_CS_EN;
     // Set the frame settings
-    *PCM_MODE_A = (PCM_MODE_CLKI) | (32 << PCM_MODE_FSLEN_OFFSET) | ((64 - 1) << PCM_MODE_FLEN_OFFSET) | PCM_MODE_CLKM;
+    *PCM_MODE_A = (PCM_MODE_CLKI) | (32 << PCM_MODE_FSLEN_OFFSET) | ((64 - 1) << PCM_MODE_FLEN_OFFSET) | PCM_MODE_CLKM | PCM_MODE_FSM;
 
     // Set the TX channel settings
     *PCM_TXC_A  = (33 << PCM_TXC_CH2POS_OFFSET) | PCM_TXC_CH2EN | PCM_TXC_CH2WEX | // Enable both channels as 24-bits
