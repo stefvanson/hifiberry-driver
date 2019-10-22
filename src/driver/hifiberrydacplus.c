@@ -3,22 +3,24 @@
 
 #include "hifiberrydacplus.h"
 
-#include "i2s.h"
 #include "i2c1.h"
-#include "test/waveform_luts.h"
 
 //! The I2C slave address of the Hifiberry
 #define HIFIBERRY_SLAVE_ADDR         (0x9A >> 1)
+
+void hbd_configure(void);
 
 void hbd_init(void) {
     i2s_init();
     i2c1_init();
     i2c1_set_target_address(HIFIBERRY_SLAVE_ADDR);
+
+    hbd_configure();
 }
 
 /*! \brief Configures the registers of the PCM5122 with some default values
  *         that make it play hearable sound. */
-void hbd_configure(void) {
+void hbd_configure() {
     hbd_write_register(HBD_REG_PAGE_SELECT,         0x00);
     hbd_write_register(HBD_REG_RESET,               0x11);
     hbd_read_register(HBD_REG_PAGE_SELECT);
@@ -39,7 +41,7 @@ void hbd_configure(void) {
     hbd_read_register(HBD_REG_STATUS1);
     hbd_write_register(HBD_REG_GPIO_SET,            0x04);
     hbd_read_register(HBD_REG_STATUS1);
-    
+
     hbd_write_register(HBD_REG_OUTPUT_ENABLE,       0x2C);
     hbd_write_register(HBD_REG_GPIO4_OUTPUT_SELECT, 0x02);
     hbd_write_register(HBD_REG_GPIO_SET,            0x0C);
@@ -81,26 +83,34 @@ void hbd_write_register(hbd_register_t reg, uint8_t value) {
     while (!i2c1_ready()) i2c1_handler();
 }
 
-void hbd_run(void) {
+void hbd_start(void) {
     unsigned int i = 0;
-    
+
     // Writes some values to the buffer before the actual start to avoid bit
     // flags to be set when starting.
-    for (i = 0; i < 20; i++) {
-        while (i2s_write(sineLUT[i]) != PCM_RET_OK);
-        while (i2s_write(sineLUT[i]) != PCM_RET_OK);
+    for (i = 0; i < 4; i++) {
+        while (i2s_write(0) != PCM_RET_OK);
     }
 
-    hbd_configure();
     i2s_start();
-    while(1) {
-        // Write the value for both channels
-        while (i2s_write(sineLUT[i]) != PCM_RET_OK);
-        while (i2s_write(sineLUT[i]) != PCM_RET_OK);
-    
-        // Update the index
-        if (++i >= LUT_SIZE) {
-            i = 0;
-        }
+}
+
+void hbd_handle(void) {
+    i2c1_handler();
+}
+
+hbd_return_t hbd_write_value(audio_val_t v) {
+    if (i2s_write(v) == PCM_RET_OK) {
+        return HBD_RET_OK;
+    } else {
+        return HBD_RET_NOK;
+    }
+}
+
+hbd_return_t hbd_read_value(audio_val_t* v) {
+    if (i2s_read(v) == PCM_RET_OK) {
+        return HBD_RET_OK;
+    } else {
+        return HBD_RET_NOK;
     }
 }
