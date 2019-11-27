@@ -3,8 +3,6 @@
 
 #include "i2s.h"
 
-#include <stdbool.h>
-
 #include "gpio.h"
 #include "rpi3bplus_common.h"
 
@@ -115,14 +113,16 @@
 /*! \brief Initializes the I2S interface, (but does not start communication!).
  *         If it was already initialized before, it will delete the old instance
  *         and create a new one.
+ *  \param[in] slave_mode If true, the frame sync and clock signal are assumed
+ *             to be inputs.
  *  \note If we are going to record, also the RX channel(s) must be configured. */
-void i2s_init(void) {
+void i2s_init(bool slave_mode) {
     // Configure the I2S pins
-    gpio_config(18, GPFSEL_ALT0); 
-    gpio_config(19, GPFSEL_ALT0); 
-    gpio_config(20, GPFSEL_ALT0); 
-    gpio_config(21, GPFSEL_ALT0); 
-    
+    gpio_config(18, GPFSEL_ALT0);
+    gpio_config(19, GPFSEL_ALT0);
+    gpio_config(20, GPFSEL_ALT0);
+    gpio_config(21, GPFSEL_ALT0);
+
     // Configure the clock for the I2S interface and start it
     *CM_PCMCTL = CM_PCMCTL_PASSWORD | CM_PCMCTL_SRC_19_2_XTAL;
     *CM_PCMDIV = CM_PCMDIV_PASSWORD | I2S_CLK_DIVI | I2S_CLK_DIVF;
@@ -133,14 +133,21 @@ void i2s_init(void) {
     // Enable the peripheral
     *PCM_CS_A   |= PCM_CS_EN;
     // Set the frame settings
-    *PCM_MODE_A = (PCM_MODE_CLKI) | (24 << PCM_MODE_FSLEN_OFFSET) | ((48 - 1) << PCM_MODE_FLEN_OFFSET);
+    *PCM_MODE_A = (PCM_MODE_CLKI) | (32 << PCM_MODE_FSLEN_OFFSET) | ((64 - 1) << PCM_MODE_FLEN_OFFSET);
+    if (slave_mode) {
+        *PCM_MODE_A |= PCM_MODE_CLKM | PCM_MODE_FSM;
+    }
 
-    // Set the channel settings
-    *PCM_TXC_A  = (25 << PCM_TXC_CH2POS_OFFSET) | PCM_TXC_CH2EN | PCM_TXC_CH2WEX | // Enable both channels as 24-bits
+    // Set the TX channel settings
+    *PCM_TXC_A  = (33 << PCM_TXC_CH2POS_OFFSET) | PCM_TXC_CH2EN | PCM_TXC_CH2WEX | // Enable both channels as 24-bits
                   (1  << PCM_TXC_CH1POS_OFFSET) | PCM_TXC_CH1EN | PCM_TXC_CH1WEX;  // Channel 1 data comes first
 
+    // Set the RX channel settings
+    *PCM_RXC_A  = (33 << PCM_RXC_CH2POS_OFFSET) | PCM_RXC_CH2EN | PCM_RXC_CH2WEX | // Enable both channels as 24-bits
+                  (1  << PCM_RXC_CH1POS_OFFSET) | PCM_RXC_CH1EN | PCM_RXC_CH1WEX;  // Channel 1 data comes first
+
     // Reset FIFO
-    *PCM_CS_A   |= PCM_CS_TXCLR | PCM_CS_SYNC;
+    *PCM_CS_A   |= PCM_CS_RXCLR | PCM_CS_TXCLR | PCM_CS_SYNC;
     while(!(*PCM_CS_A & PCM_CS_SYNC));            // Wait for the SYNC bit to be set (2 PCM cycles have passed).
 }
 
@@ -151,11 +158,11 @@ void i2s_start(void) {
     while(*PCM_CS_A & PCM_CS_TXD) {
         *PCM_FIFO_A = 0;
     }
-    // Start transmission
-    *PCM_CS_A |= PCM_CS_TXON;
+    // Start transmission and reception
+    *PCM_CS_A |= PCM_CS_TXON | PCM_CS_RXON;
 }
 
-/*! \brief Writes a audio value (for a single channel) to the buffer.
+/*! \brief Writes an audio value (for a single channel) to the buffer.
  *  \param[in] val The 24-bit audio value.
  *  \returns PCM_RET_OK if the message was written into the FIFO or
  *           PCM_RET_NOK_FIFO_FULL if it couldn't. */
@@ -165,5 +172,18 @@ i2s_return_t i2s_write(audio_val_t val) {
         return PCM_RET_OK;
     } else {
         return PCM_RET_NOK_FIFO_FULL;
+    }
+}
+
+/*! \brief Reads an audio value (for a single channel) from the buffer.
+ *  \param[in] val Pointer to where the 24-bit audio value is stored.
+ *  \returns PCM_RET_OK if the message was read successfully or
+ *           PCM_RET_NOK_FIFO_EMPTY if it couldn't. */
+i2s_return_t i2s_read(audio_val_t* val) {
+    if(*PCM_CS_A & PCM_CS_RXD) {
+        *val = (*PCM_FIFO_A) & 0x00FFFFFF;
+        return PCM_RET_OK;
+    } else {
+        return PCM_RET_NOK_FIFO_EMPTY;
     }
 }
