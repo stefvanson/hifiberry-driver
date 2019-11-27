@@ -4,36 +4,35 @@
 #include "driver/hifiberrydacplus.h"
 #include "waveform_luts.h"
 
-#define PCM_TXC_A       ((volatile uint32_t*) (MMIO_BASE + 0x00203010))
-#define PCM_CS_TXE              (1 << 21)
-
-
 int main(void) {
-    unsigned i = 0;
+    // Whether the RPi is I2S clock master or slave
+    bool i2s_slave_mode = false;
+    // Whether an input device is connected on the I2s bus
+    bool i2s_input_present = false;
+
     DEBUG_INIT();
     DEBUG_STR("Program started...\n");
 
-    hbd_init();
+    hbd_init(i2s_slave_mode);
     hbd_start();
 
-    //while(1) {
-    //  while (hbd_write_value(sineLUT[i]) != HBD_RET_OK);
-    //  while (hbd_write_value(sineLUT[i]) != HBD_RET_OK);
-    //  // Update the index
-    //  if (++i >= LUT_SIZE) {
-    //      i = 0;
-    //  }
-    //}
-
-    while(1) {
-        hbd_return_t ret = HBD_RET_NOK;
-        audio_val_t av = 0;
-        // Write the read value for both channels
-        ret = hbd_read_value(&av);
-        if (ret == HBD_RET_OK) {
-            while (hbd_write_value(av) != HBD_RET_OK);
-        } else if (*PCM_TXC_A & PCM_CS_TXE) {
-            hbd_write_value(0xF3F2F1);
+    if (i2s_input_present == false) {
+        // If no input is present, output a sine ("round" tone)
+        unsigned i = 0;
+        while(1) {
+            while (hbd_write_value(sineLUT[i]) != HBD_RET_OK);
+            while (hbd_write_value(sineLUT[i]) != HBD_RET_OK);
+            // Update the index
+            if (++i >= LUT_SIZE) {
+                i = 0;
+            }
+        }
+    } else {
+        // If input is present, simply forward input to output
+        while(1) {
+          audio_val_t av = 0;
+          while(hbd_read_value(&av) != HBD_RET_OK);
+          while (hbd_write_value(av) != HBD_RET_OK);
         }
     }
 

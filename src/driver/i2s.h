@@ -5,6 +5,7 @@
  * I2S driver header file. */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "common.h"
 
@@ -19,7 +20,7 @@ typedef enum {
     PCM_RET_NOK_FIFO_EMPTY, //!< The operation was unsuccessful because the FIFO was empty.
 } i2s_return_t;
 
-void i2s_init(void);
+void i2s_init(bool slave_mode);
 void i2s_start(void);
 i2s_return_t i2s_write(audio_val_t v);
 i2s_return_t i2s_read(audio_val_t* v);

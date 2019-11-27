@@ -42,7 +42,7 @@ typedef enum {
 
 /*! \brief Initializes the hifiberry driver (but does not start
  *         anything yet). */
-void hbd_init(void);
+void hbd_init(bool i2s_slave_mode);
 
 /*! \brief Reads the value of a single register of the PCM5122.
  *  \param[in] reg The register that is set.

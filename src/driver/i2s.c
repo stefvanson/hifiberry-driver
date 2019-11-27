@@ -3,8 +3,6 @@
 
 #include "i2s.h"
 
-#include <stdbool.h>
-
 #include "gpio.h"
 #include "rpi3bplus_common.h"
 
@@ -115,8 +113,10 @@
 /*! \brief Initializes the I2S interface, (but does not start communication!).
  *         If it was already initialized before, it will delete the old instance
  *         and create a new one.
+ *  \param[in] slave_mode If true, the frame sync and clock signal are assumed
+ *             to be inputs.
  *  \note If we are going to record, also the RX channel(s) must be configured. */
-void i2s_init(void) {
+void i2s_init(bool slave_mode) {
     // Configure the I2S pins
     gpio_config(18, GPFSEL_ALT0);
     gpio_config(19, GPFSEL_ALT0);
@@ -133,7 +133,10 @@ void i2s_init(void) {
     // Enable the peripheral
     *PCM_CS_A   |= PCM_CS_EN;
     // Set the frame settings
-    *PCM_MODE_A = (PCM_MODE_CLKI) | (32 << PCM_MODE_FSLEN_OFFSET) | ((64 - 1) << PCM_MODE_FLEN_OFFSET) | PCM_MODE_CLKM | PCM_MODE_FSM;
+    *PCM_MODE_A = (PCM_MODE_CLKI) | (32 << PCM_MODE_FSLEN_OFFSET) | ((64 - 1) << PCM_MODE_FLEN_OFFSET);
+    if (slave_mode) {
+        *PCM_MODE_A |= PCM_MODE_CLKM | PCM_MODE_FSM;
+    }
 
     // Set the TX channel settings
     *PCM_TXC_A  = (33 << PCM_TXC_CH2POS_OFFSET) | PCM_TXC_CH2EN | PCM_TXC_CH2WEX | // Enable both channels as 24-bits
@@ -165,7 +168,7 @@ void i2s_start(void) {
  *           PCM_RET_NOK_FIFO_FULL if it couldn't. */
 i2s_return_t i2s_write(audio_val_t val) {
     if(*PCM_CS_A & PCM_CS_TXD) {
-        *PCM_FIFO_A = val;// & 0x00FFFFFF;
+        *PCM_FIFO_A = val & 0x00FFFFFF;
         return PCM_RET_OK;
     } else {
         return PCM_RET_NOK_FIFO_FULL;
@@ -177,9 +180,8 @@ i2s_return_t i2s_write(audio_val_t val) {
  *  \returns PCM_RET_OK if the message was read successfully or
  *           PCM_RET_NOK_FIFO_EMPTY if it couldn't. */
 i2s_return_t i2s_read(audio_val_t* val) {
-  // TODO
     if(*PCM_CS_A & PCM_CS_RXD) {
-        *val = *PCM_FIFO_A;// & 0x00FFFFFF;
+        *val = (*PCM_FIFO_A) & 0x00FFFFFF;
         return PCM_RET_OK;
     } else {
         return PCM_RET_NOK_FIFO_EMPTY;

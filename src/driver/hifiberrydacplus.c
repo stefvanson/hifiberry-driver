@@ -10,8 +10,8 @@
 
 void hbd_configure(void);
 
-void hbd_init(void) {
-    i2s_init();
+void hbd_init(bool i2s_slave_mode) {
+    i2s_init(i2s_slave_mode);
     i2c1_init();
     i2c1_set_target_address(HIFIBERRY_SLAVE_ADDR);
 
@@ -84,14 +84,6 @@ void hbd_write_register(hbd_register_t reg, uint8_t value) {
 }
 
 void hbd_start(void) {
-    unsigned int i = 0;
-
-    // Writes some values to the buffer before the actual start to avoid bit
-    // flags to be set when starting.
-    for (i = 0; i < 4; i++) {
-        while (i2s_write(0) != PCM_RET_OK);
-    }
-
     i2s_start();
 }
 
