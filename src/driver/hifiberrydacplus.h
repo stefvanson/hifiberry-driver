@@ -9,8 +9,8 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "i2s.h"
 
 //! Type for the PCM5122 registers.
 typedef enum {
@@ -39,6 +39,9 @@ typedef enum {
     HBD_RET_NOK,      //!< The operation was unsuccessful.
 } hbd_return_t;
 
+/*! Type for single channel audio values.
+ * \note Only the 24 least significant bits are relevant and processed. */
+typedef uint_fast32_t audio_val_t;
 
 /*! \brief Initializes the hifiberry driver (but does not start
  *         anything yet). */

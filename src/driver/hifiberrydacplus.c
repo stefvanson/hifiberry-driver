@@ -3,7 +3,9 @@
 
 #include "hifiberrydacplus.h"
 
+#include "i2s.h"
 #include "i2c1.h"
+
 
 //! The I2C slave address of the Hifiberry
 #define HIFIBERRY_SLAVE_ADDR         (0x9A >> 1)
@@ -100,7 +102,9 @@ hbd_return_t hbd_write_value(audio_val_t v) {
 }
 
 hbd_return_t hbd_read_value(audio_val_t* v) {
-    if (i2s_read(v) == PCM_RET_OK) {
+    i2s_audio_val_t i2s_val = 0;
+    if (i2s_read(&i2s_val) == PCM_RET_OK) {
+        *v = (audio_val_t) i2s_val;
         return HBD_RET_OK;
     } else {
         return HBD_RET_NOK;

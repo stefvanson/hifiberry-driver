@@ -166,7 +166,7 @@ void i2s_start(void) {
  *  \param[in] val The 24-bit audio value.
  *  \returns PCM_RET_OK if the message was written into the FIFO or
  *           PCM_RET_NOK_FIFO_FULL if it couldn't. */
-i2s_return_t i2s_write(audio_val_t val) {
+i2s_return_t i2s_write(i2s_audio_val_t val) {
     if(*PCM_CS_A & PCM_CS_TXD) {
         *PCM_FIFO_A = val & 0x00FFFFFF;
         return PCM_RET_OK;
@@ -179,7 +179,7 @@ i2s_return_t i2s_write(audio_val_t val) {
  *  \param[in] val Pointer to where the 24-bit audio value is stored.
  *  \returns PCM_RET_OK if the message was read successfully or
  *           PCM_RET_NOK_FIFO_EMPTY if it couldn't. */
-i2s_return_t i2s_read(audio_val_t* val) {
+i2s_return_t i2s_read(i2s_audio_val_t* val) {
     if(*PCM_CS_A & PCM_CS_RXD) {
         *val = (*PCM_FIFO_A) & 0x00FFFFFF;
         return PCM_RET_OK;
