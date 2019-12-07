@@ -70,7 +70,7 @@
 #define PCM_CS_RXD              (1 << 20)
 #define PCM_CS_TXE              (1 << 21)
 #define PCM_CS_RXF              (1 << 22)
-#define PCM_CS_RXSEC            (1 << 23)
+#define PCM_CS_RXSEX            (1 << 23)
 #define PCM_CS_SYNC             (1 << 24)
 #define PCM_CS_STBY             (1 << 25)
 
@@ -131,7 +131,7 @@ void i2s_init(bool slave_mode) {
 
     // Configure the I2S interface for transmission
     // Enable the peripheral
-    *PCM_CS_A   |= PCM_CS_EN;
+    *PCM_CS_A   |= PCM_CS_EN | PCM_CS_RXSEX;
     // Set the frame settings
     *PCM_MODE_A = (PCM_MODE_CLKI) | (32 << PCM_MODE_FSLEN_OFFSET) | ((64 - 1) << PCM_MODE_FLEN_OFFSET);
     if (slave_mode) {
@@ -168,7 +168,7 @@ void i2s_start(void) {
  *           PCM_RET_NOK_FIFO_FULL if it couldn't. */
 i2s_return_t i2s_write(i2s_audio_val_t val) {
     if(*PCM_CS_A & PCM_CS_TXD) {
-        *PCM_FIFO_A = val & 0x00FFFFFF;
+        *PCM_FIFO_A = val;
         return PCM_RET_OK;
     } else {
         return PCM_RET_NOK_FIFO_FULL;
@@ -181,7 +181,7 @@ i2s_return_t i2s_write(i2s_audio_val_t val) {
  *           PCM_RET_NOK_FIFO_EMPTY if it couldn't. */
 i2s_return_t i2s_read(i2s_audio_val_t* val) {
     if(*PCM_CS_A & PCM_CS_RXD) {
-        *val = (*PCM_FIFO_A) & 0x00FFFFFF;
+        *val = (*PCM_FIFO_A);
         return PCM_RET_OK;
     } else {
         return PCM_RET_NOK_FIFO_EMPTY;

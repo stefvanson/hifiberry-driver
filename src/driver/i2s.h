@@ -11,7 +11,7 @@
 
 /*! Type for single channel audio values.
  * \note Only the 24 least significant bits are relevant and processed. */
-typedef uint_fast32_t i2s_audio_val_t;
+typedef int_fast32_t i2s_audio_val_t;
 
 /*! Return values for I2S driver operations. */
 typedef enum {

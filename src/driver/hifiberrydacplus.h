@@ -41,7 +41,7 @@ typedef enum {
 
 /*! Type for single channel audio values.
  * \note Only the 24 least significant bits are relevant and processed. */
-typedef uint_fast32_t audio_val_t;
+typedef int32_t audio_val_t;
 
 /*! \brief Initializes the hifiberry driver (but does not start
  *         anything yet). */
